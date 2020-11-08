@@ -13,4 +13,4 @@ This is a Python-based web application.
     
     `export FLASK_ENV=development`
 3. Input your list of items you want to rank in `items.csv`
-4. The app will be running at `localhost:5000`
+4. Run the app using `flask run`. The app will be running at `localhost:5000`
