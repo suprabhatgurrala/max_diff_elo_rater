@@ -1,9 +1,25 @@
 {% extends 'base.html' %}
 
 {% block content %}
-	<h1>{% block title %} Max Diff Elo Rater {% endblock %}</h1>
-	{% for item in sample %}
-		<input type="radio">
-		<label> {{item}} </label><br>
-	{% endfor %}
+	<p>Select the best and worst of the following items:</p>
+	<form>
+		<table class="table table-dark">
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">Best</th>
+					<th scope="col">Item</th>
+					<th scope="col">Worst</th>
+				</tr>
+			</thead>
+			{% for id, item in sample.iteritems() %}
+							
+				<tr>
+					<td><input type="radio" id="best" name="best" value={{id}}></td>
+					<td>{{item}}</td>
+					<td><input type="radio" id="worst" name="worst" value={{id}}></td>
+				</tr>
+			{% endfor %}
+		</table>
+		<input type="submit" id="submit" value="Submit" class="btn btn-primary">
+	</form>
 {% endblock %}
