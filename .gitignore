@@ -1,2 +1,4 @@
 .env_movie_rater/
 __pycache__
+.ipynb_checkpoints/
+*.ipynb
