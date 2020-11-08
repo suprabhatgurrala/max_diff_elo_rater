@@ -46,7 +46,7 @@ class MaxDiffRater:
         if winner == loser:
             # Winners and losers can't be the same
             return
-        
+            
         # Get elo ratings for each item
         a = self.elo_ratings.loc[winner]["elo"]
         b = self.elo_ratings.loc[loser]["elo"]
@@ -66,18 +66,18 @@ class MaxDiffRater:
     
     def submit_results(self, sample_ids, best, worst):
         """
-        Perform Elo updates for an answer from a MaxDiff sample
-        :param sample_ids: an iterable of ids that were presented in the MaxDiff sample
-        :param best: the id of the 
+        Perform Elo updates for an answer from a MaxDiff sample.
+        This code is designed to handle the data that comes from a POST request of the HTML form.
+        :param sample_ids: the list of ids that were presented in the MaxDiff sample
+        :param best: the id of the best item
+        :param worst: the id of the worst item
         """
-        best = int(best)        
+        best = int(best)
         worst = int(worst)
 
-        if (best not in sample_ids) or (worst not in sample_ids):
-            # If best or worst are not in the sample, do not make any updates
-            return
-
         for i in sample_ids:
+            i = int(i.replace("/", ""))
+
             if i != best:
                 # We can infer that the best would "win" against the other items in the sample
                 self.update_elo(best, i)
@@ -98,7 +98,7 @@ class MaxDiffRater:
         least_sample = self.elo_ratings.nsmallest(i, "matches", keep="all")
 
         # Continue to get the least picked items if there aren't enough
-        while least_sample.shape[0] < bucket_size:
+        while (least_sample.shape[0] < bucket_size) and (i < bucket_size):
             i += 1
             least_sample = self.elo_ratings.nsmallest(i, "matches", keep="all")
         

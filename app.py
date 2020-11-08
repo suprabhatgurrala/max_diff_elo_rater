@@ -6,19 +6,19 @@ app = Flask(__name__)
 
 mdr = MaxDiffRater()
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def index():
     """
     Main page, displays a sample of items and allows you to submit best and worst ones.
     """
+    if request.method == 'POST':
+        sample_ids = request.form.getlist("sample_ids")
+        best = request.form.get("best")
+        worst = request.form.get("worst")
+        mdr.submit_results(sample_ids, best, worst)
+    
     sample = mdr.get_sample()
-
-    best = request.args.get("best")
-    worst = request.args.get("worst")
-
-    if best is not None and worst is not None:
-        mdr.submit_results(sample.index, best, worst)
-
+    
     return render_template('index.html', sample=sample["items"])
 
 @app.route('/results')

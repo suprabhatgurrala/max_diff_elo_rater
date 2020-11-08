@@ -2,7 +2,7 @@
 
 {% block content %}
 	<p>Select the best and worst of the following items:</p>
-	<form>
+	<form method='POST' action='/'>
 		<table class="table table-dark">
 			<thead class="thead-dark">
 				<tr>
@@ -12,14 +12,14 @@
 				</tr>
 			</thead>
 			{% for id, item in sample.iteritems() %}
-							
 				<tr>
 					<td><input type="radio" id="best" name="best" value={{id}}></td>
 					<td>{{item}}</td>
 					<td><input type="radio" id="worst" name="worst" value={{id}}></td>
 				</tr>
+				<input type="hidden" name="sample_ids" value={{id}}/>
 			{% endfor %}
 		</table>
-		<input type="submit" id="submit" value="Submit" class="btn btn-primary">
+		<input type="submit" id="submit" class="btn btn-primary">
 	</form>
 {% endblock %}
