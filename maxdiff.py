@@ -4,38 +4,51 @@ import pandas as pd
 
 
 ELO_RATINGS_FILE = "elo_ratings.csv"
+HISTORY_FILE = "history.tsv"
 
 
 class MaxDiffRater:
 
-    def __init__(self, k_factor=32):
+    def __init__(self, start_k_factor=40, k_factor_decay=0.99):
         """
         Initialize a MaxDiffRater
-        :param k_factor: Sets the K-factor for the Elo update
-        """
-        # Load a previously used Elo ratings file from disk
-        if os.path.isfile(ELO_RATINGS_FILE):
-            self.load_elo_ratings()
-        else:
-            # Create Elo ratings from a list of items
-            self.initialize_items()
+        :param start_k_factor: Sets the max K-factor for an Elo update on a new item
+        :param k_factor_decay: The amount to decay the k_factor for each update on an item. Set to 1 to disable k_factor decay
+        """    
+        self.load_elo_ratings()
+        self.load_history()
         
-        self.k_factor = k_factor
+        self.start_k_factor = start_k_factor
+        self.k_factor_decay = k_factor_decay
         
-    def initialize_items(self):
-        """Read list of items from file and initialize the elo ratings"""
-        self.elo_ratings = pd.read_csv("items.csv", names=["items"])
-        self.elo_ratings["elo"] = 1500
-        self.elo_ratings["matches"] = 0
-        self.store_elo_ratings()
-
+    
     def store_elo_ratings(self):
         """Save the elo ratings to disk"""
-        self.elo_ratings.to_csv("elo_ratings.csv", index_label="id")
+        self.elo_ratings.to_csv(ELO_RATINGS_FILE, index_label="id")
 
     def load_elo_ratings(self):
         """Read elo ratings from disk"""
-        self.elo_ratings = pd.read_csv("elo_ratings.csv", index_col="id")
+        # Load a previously used Elo ratings file from disk
+        if os.path.isfile(ELO_RATINGS_FILE):
+            self.elo_ratings = pd.read_csv(ELO_RATINGS_FILE, index_col="id")
+        else:
+            # Create Elo ratings from a list of items
+            self.elo_ratings = pd.read_csv("items.csv", names=["items"])
+            self.elo_ratings["elo"] = 1500
+            self.elo_ratings["matches"] = 0
+            self.store_elo_ratings()
+        
+
+    def load_history(self):
+        """Read history from disk"""
+        if os.path.isfile(HISTORY_FILE):
+            self.history = pd.read_csv(HISTORY_FILE, index_col="answer_id", sep="\t")
+        else:
+            self.history = pd.DataFrame(columns=["best", "worst", "group"])
+
+    def store_history(self):
+        """Save history to disk"""
+        self.history.to_csv(HISTORY_FILE, index_label="answer_id", sep="\t")
 
     def update_elo(self, winner, loser):
         """
@@ -50,15 +63,19 @@ class MaxDiffRater:
         # Get elo ratings for each item
         a = self.elo_ratings.loc[winner]["elo"]
         b = self.elo_ratings.loc[loser]["elo"]
+
+        a_matches = self.elo_ratings.loc[winner]["matches"]
+        b_matches = self.elo_ratings.loc[winner]["matches"]
         
         # Calculate expected win probability for winner
         expected = 1 / (1 + 10**((b - a) / 400))
         
-        rating_change = self.k_factor * (1 - expected)
+        a_rating_change = (self.start_k_factor * self.k_factor_decay**a_matches) * (1 - expected)
+        b_rating_change = (self.start_k_factor * self.k_factor_decay**b_matches) * (1 - expected)
         
         # Make rating changes
-        self.elo_ratings.at[winner, "elo"] += rating_change
-        self.elo_ratings.at[loser, "elo"] -= rating_change
+        self.elo_ratings.at[winner, "elo"] += a_rating_change
+        self.elo_ratings.at[loser, "elo"] -= b_rating_change
         
         # Increment number of matches
         self.elo_ratings.at[winner, "matches"] += 1
@@ -75,6 +92,8 @@ class MaxDiffRater:
         best = int(best)
         worst = int(worst)
 
+        sample_id_list = []
+
         for i in sample_ids:
             i = int(i.replace("/", ""))
 
@@ -84,6 +103,16 @@ class MaxDiffRater:
             if (i != worst) and (i != best):
                 # We can infer that the other items in the sample would "win" against the worst    
                 self.update_elo(i, worst)
+            sample_id_list.append(i)
+
+        self.history = self.history.append({
+            "best": best,
+            "worst": worst,
+            "group": sample_id_list
+            },
+            ignore_index=True
+        )
+        self.store_history()
         
         # Store our changes to disk
         self.store_elo_ratings()
