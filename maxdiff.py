@@ -132,7 +132,7 @@ class MaxDiffRater:
         combined_sample = general_sample.append(least_sample).drop_duplicates()
 
         # Sample again if there were duplicates
-        while combined_sample.shape[1] < bucket_size:
+        while combined_sample.shape[0] < bucket_size:
             combined_sample = self.elo_ratings.sample(bucket_size - 1).append(least_sample).drop_duplicates()
             
         return combined_sample
