@@ -122,17 +122,17 @@ class MaxDiffRater:
         Get a sample of items, with a bias towards items that have been picked less frequently.
         :param bucket_size: the number of items to get per sample
         """
-        # Get all items that have been picked the least
-        i = 1
-        least_sample = self.elo_ratings.nsmallest(i, "matches", keep="all")
+        # Get one item that has been picked the least
+        least_sample = self.elo_ratings.nsmallest(1, "matches", keep="all").sample(1)
+        
+        # Fill the rest of the bucket with a random sample
+        general_sample = self.elo_ratings.sample(bucket_size - 1)
+        
+        # Combine the two samples
+        combined_sample = general_sample.append(least_sample).drop_duplicates()
 
-        # Continue to get the least picked items if there aren't enough
-        while (least_sample.shape[0] < bucket_size) and (i < bucket_size):
-            i += 1
-            least_sample = self.elo_ratings.nsmallest(i, "matches", keep="all")
-        
-        # Take a sample if there are more items than the bucket size
-        if least_sample.shape[0] > bucket_size:
-            least_sample = least_sample.sample(bucket_size)
-        
-        return least_sample
+        # Sample again if there were duplicates
+        while combined_sample.shape[1] < bucket_size:
+            combined_sample = self.elo_ratings.sample(bucket_size - 1).append(least_sample).drop_duplicates()
+            
+        return combined_sample
